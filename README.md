@@ -8,4 +8,9 @@ This assignment is intended to familiarize you with writing simple network code.
 
 Your client must support TLS encrypted sockets. The server will return different secret flags depending on whether your client communicates with or without TLS. To receive full credit on this project, you must turn in both secret flags: the one retrieved via a non-encrypted socket, and the one retrieved via a TLS encrypted socket.
 
+Approach:
 
+Challenges:
+- Learnning how to create a connection to the socket
+
+Guessing Strategy:
