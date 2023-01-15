@@ -1,0 +1,25 @@
+import socket
+import json
+import ssl
+import argparse
+
+parser = argparse.ArgumentParser(description = 'Wordle program')
+parser.add_argument('-p', 'port')
+parser.add_argument('-s')
+parser.add_argument('hostname')
+parser.add_argument('Northeastern-username')
+
+args = parser.parse_args()
+print(args.accumulate(args.integers))
+
+HOST = "proj1.3700.network" 
+PORT = 27993 
+USER = "chen.anth"
+# TLS = 27993
+
+#1 Use argparse for commandline args (host, port, username before 8)
+#2 Create a socket (socket library)
+#3 Connect the socket (socket.connect(host, port))
+#4 Create json object Hello = {"type": "hello", "northeastern_username": "chen.anth"} + json.dumps + "\n"
+#5 Send information using socket.sendall(bytes(Hello, "utf-8"))
+#6 Receive and read information using socket.recv(1024)
