@@ -1,25 +1,100 @@
+#!/usr/bin/env python3
 import socket
 import json
 import ssl
 import argparse
 
-parser = argparse.ArgumentParser(description = 'Wordle program')
-parser.add_argument('-p', 'port')
-parser.add_argument('-s')
-parser.add_argument('hostname')
-parser.add_argument('Northeastern-username')
-
+# Creating a parser to take in arguments properly through commandline for the client
+parser = argparse.ArgumentParser()
+parser.add_argument("hostname")
+parser.add_argument("username")
+parser.add_argument("-p")
+parser.add_argument("-s", action="store_true")
 args = parser.parse_args()
-print(args.accumulate(args.integers))
+user = args.username
+host = args.hostname
+if (args.p is None):
+    port = 27993
+else:
+    port = args.p
+if (args.s and args.p is None):
+    port = 27994
 
-HOST = "proj1.3700.network" 
-PORT = 27993 
-USER = "chen.anth"
-# TLS = 27993
+# Creating a socket and connecting it to the server
+s = socket.socket()
+s.connect((host, port))
+# Support for TLS Encryption
+if (port == 27994):
+    s = ssl.create_default_context().wrap_socket(s, server_hostname=host)
 
-#1 Use argparse for commandline args (host, port, username before 8)
-#2 Create a socket (socket library)
-#3 Connect the socket (socket.connect(host, port))
-#4 Create json object Hello = {"type": "hello", "northeastern_username": "chen.anth"} + json.dumps + "\n"
-#5 Send information using socket.sendall(bytes(Hello, "utf-8"))
-#6 Receive and read information using socket.recv(1024)
+# Method that takes in a JSON object and sends it to the server and receives an output from the server
+# converts it into a string, then bytes and sends it to the server,
+# then receives a JSON object from the server, converts it back into bytes, then to a string
+def sendAndReceiveFromServer(object):
+    object = json.dumps(object) + "\n"
+    s.sendall(bytes(object, "utf-8"))
+    ret = json.loads(s.recv(1024).decode("utf-8"))
+    return ret
+
+# Method that iterates through the official word list and finds the next guess
+def findNextGuess():
+    # Loop to try each word in the official word list
+    for line in words:
+        goodGuess = True
+        line = line.strip()
+        # Loop to ensure the next guessed word contains all letters known in the exact place in the word
+        for x in range(0,5):
+            if (line[x] != correctWord[x] and correctWord[x] != " "):
+                goodGuess = False
+        # Loop to ensure the next guessed word contains all letters already known in the word
+        for x in goodLetters:
+            if (not line.__contains__(x)):
+                goodGuess = False
+        if (goodGuess):
+            return line
+
+# Method to make use of marks feedback from the lastword
+def analyzeMarks(lastWord, marks):
+    for x in range(0,5):
+        if (marks[x] == 1):
+            if (not goodLetters.__contains__(lastWord[x])):
+                goodLetters.append(lastWord[x])
+        elif (marks[x] == 2):
+            if (goodLetters.__contains__(lastWord[x])):
+                goodLetters.remove(lastWord[x])
+            correctWord[x] = lastWord[x]
+
+# Beginning hello to get the game ID
+Hello = {"type": "hello", "northeastern_username": "chen.anth"}
+ret = sendAndReceiveFromServer(Hello)
+id = ret.get("id")
+
+# Open words in a text file
+words = open("project1-words.txt","r")
+
+# First guess
+guess = {"type": "guess", "id": id, "word": "salet"}
+ret = sendAndReceiveFromServer(guess)
+lastWord = list(ret.get("guesses")[-1].get("word"))
+marks = ret.get("guesses")[-1].get("marks")
+
+# All letters that are in the Wordle word
+goodLetters = []
+# The correct word as an array
+correctWord = [" "] * 5
+
+# Loop to continue attempting guessing until solving the Wordle
+while(ret.get("type") != "bye"):
+    analyzeMarks(lastWord, marks)
+    guessWord = findNextGuess()
+    guess = {"type": "guess", "id": id, "word": guessWord}
+    ret = sendAndReceiveFromServer(guess)
+    if (ret.get("type") != "bye"):
+        lastWord = list(ret.get("guesses")[-1].get("word"))
+        marks = ret.get("guesses")[-1].get("marks")
+
+# Close the text file
+words.close()
+
+# ANSWER!!
+print(ret.get("flag"))
